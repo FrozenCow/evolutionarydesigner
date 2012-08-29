@@ -599,7 +599,6 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		return this.creature;
 	};
 
-	// Editing
 	function designmode() {
 		var me = {
 			enabled: false,

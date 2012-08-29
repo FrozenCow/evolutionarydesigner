@@ -1,5 +1,6 @@
 define(['vector','staticcollidable'],function(Vector,StaticCollidable){
-	return function(g) {
+	return function(game) {
+		var g = game;
 		g.objects.addIndex('serialize');
 		var tools = {
 			'0': { // Draw
@@ -21,13 +22,43 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 						g.emit('levelchanged');
 					}
 				},
-				postdraw: function(g) {
+				draw: function(g) {
 					g.strokeStyle('black');
 					g.strokePolygon(polygon);
 				}
 			},
-			'1': { // Place objects
+			'1': {
 				mousedown: function(button,x,y) {
+					var me = this;
+					game.objects.lists.collisionlines.each(function(cls) {
+						for(var i=0;i<cls.collisionlines.length;i++) {
+							if (cls.collisionlines[i].end.distanceTo(x,y) < 10) {
+								me.grabbed = cls.collisionlines[i];
+							}
+						}
+					});
+				},
+				mousemove: function(x,y) {
+					var me = this;
+					if (me.grabbed) {
+						me.grabbed.end.set(x,y);
+						me.grabbed.next.start.set(x,y);
+						me.grabbed.recalculate();
+						me.grabbed.next.recalculate();
+						game.emit('levelchanged');
+					}
+				},
+				mouseup: function(button,x,y) {
+					var me = this;
+					me.grabbed = null;
+				},
+				draw: function(g) {
+					game.objects.lists.collisionlines.each(function(cls) {
+						cls.collisionlines.forEach(function(cl) {
+							g.fillCircle(cl.start.x,cl.start.y,10);
+						});
+					});
+					
 				}
 			}
 		};
@@ -50,6 +81,7 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 
 		g.chains.draw.push(function(g,next) {
 			g.fillCenteredText('EDITOR',400,300);
+			if (tool.draw) { tool.draw(g); }
 			next(g);
 		});
 
