@@ -15,8 +15,10 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 				},
 				keydown: function(key) {
 					if (key === 'enter') {
-						g.objects.add(new StaticCollidable(null,polygon));
+						g.objects.add(new StaticCollidable(polygon));
+						g.objects.handlePending();
 						polygon=[];
+						g.emit('levelchanged');
 					}
 				},
 				postdraw: function(g) {
@@ -45,6 +47,12 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 		pass('keyup');
 		//pass('predraw');
 		//pass('postdraw');
+
+		g.chains.draw.push(function(g,next) {
+			g.fillCenteredText('EDITOR',400,300);
+			next(g);
+		});
+
 
 		g.on('keydown', function(button) {
 			if (tools[button]) {

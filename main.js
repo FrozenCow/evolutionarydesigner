@@ -50,7 +50,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	var canvas = document.getElementById('main');
 	var t = new Vector(0,0);
 	var t2 = new Vector(0,0);
-	var g = new Game(canvas, [mouse,keyboard,resources,collision,quake]);
+	var g = new Game(canvas, [mouse,keyboard,resources,collision,quake,editor]);
 	var game = g;
 	var preloadStatus = g.resources.preload({
 		images: ['ball1','ball2','spring','grass','ground','flag','arrow'],
@@ -420,6 +420,8 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	foregroundCanvas.width = 800;
 	foregroundCanvas.height = 600;
 
+	g.on('levelchanged',updateLevelGraphics);
+
 	function updateLevelGraphics() {
 		maskCtx = foregroundCanvas.getContext('2d');
 		var groundPattern = maskCtx.createPattern(images.ground,'repeat');
@@ -545,7 +547,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		} else {
 			g.ResetCreaturePosition();
 		}
-		g.ChangeState((g.level.controlonly ? control : editor)());
+		g.ChangeState((g.level.controlonly ? controlmode : designmode)());
 	};
 	g.ResetCreaturePosition = function() {
 		var start;
@@ -598,7 +600,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	};
 
 	// Editing
-	function editor(creature) {
+	function designmode() {
 		var me = {
 			enabled: false,
 			enable: enable,
@@ -773,7 +775,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 					return inStart;
 				})) {
 					audio.start.play();
-					g.ChangeState(control());
+					g.ChangeState(controlmode());
 				} else {
 					audio.deny.play();
 					console.log('Not in start');
@@ -826,7 +828,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	}
 
 
-	function control() {
+	function controlmode() {
 		var me = {
 			enabled: false,
 			enable: enable,
@@ -858,7 +860,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 				g.RestartLevel();
 			} else if (key === 'space' && !g.level.controlonly) {
 				audio.stop.play();
-				g.ChangeState(editor());
+				g.ChangeState(designmode());
 				return;
 			}
 		}
@@ -926,7 +928,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 				} else {
 					g.ResetCreaturePosition();
 				}
-				g.ChangeState((nextLevel.controlonly ? control : editor)());
+				g.ChangeState((nextLevel.controlonly ? controlmode : designmode)());
 			} else if (key === 'r') {
 				g.ChangeLevel(currentlevel.clone());
 				if (g.level.creature) {
@@ -934,7 +936,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 				} else {
 					g.ResetCreaturePosition();
 				}
-				g.ChangeState((nextLevel.controlonly ? control : editor)());
+				g.ChangeState((nextLevel.controlonly ? controlmode : designmode)());
 			}
 		}
 
@@ -982,7 +984,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 			} else {
 				g.ChangeCreature(creatures.dot);
 			}
-			g.ChangeState((g.level.controlonly ? control : editor)());
+			g.ChangeState((g.level.controlonly ? controlmode : designmode)());
 			if (me.enabled) { disable(); }
 		}
 
