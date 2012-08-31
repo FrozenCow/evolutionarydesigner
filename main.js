@@ -540,11 +540,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	};
 	g.RestartLevel = function() {
 		g.ChangeLevel(g.level.clone());
-		if (g.level.creature) {
-			g.ChangeCreature(g.level.creature);
-		} else {
-			g.ResetCreaturePosition();
-		}
+		g.ChangeCreature(g.startdesign);
 		g.ChangeState((g.level.controlonly ? controlmode : designmode)());
 	};
 	g.ResetCreaturePosition = function() {
@@ -761,6 +757,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 		function keydown(key) {
 			if (key === 'r') {
+				g.design = null;
 				g.RestartLevel();
 			} else if (key === 'space') {
 				if (g.creature.particles.every(function(p) {
@@ -772,6 +769,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 					return inStart;
 				})) {
 					audio.start.play();
+					g.design = Creature.toJson(g.creature);
 					g.ChangeState(controlmode());
 				} else {
 					audio.deny.play();
@@ -802,6 +800,9 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		}
 
 		function enable() {
+			if (g.design) {
+				g.ChangeCreature(g.design);
+			}
 			g.chains.draw.push(draw);
 			g.chains.update.push(update);
 			g.on('mouseup',mouseup);
@@ -841,6 +842,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 				});
 				return finished;
 			})) {
+				g.design = null;
 				audio.finish.play();
 				g.ChangeState(finished(time));
 			}
@@ -925,6 +927,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 				} else {
 					g.ResetCreaturePosition();
 				}
+				g.startdesign = Creature.toJson(g.creature);
 				g.ChangeState((nextLevel.controlonly ? controlmode : designmode)());
 			} else if (key === 'r') {
 				g.ChangeLevel(currentlevel.clone());
@@ -981,6 +984,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 			} else {
 				g.ChangeCreature(creatures.dot);
 			}
+			g.startdesign = Creature.toJson(g.creature);
 			g.ChangeState((g.level.controlonly ? controlmode : designmode)());
 			if (me.enabled) { disable(); }
 		}
