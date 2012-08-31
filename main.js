@@ -46,7 +46,7 @@ function slide(a,b) {
 	return (b?1:0)-(a?1:0);
 }
 
-require(['domready!','game','cclass','vector','editor','mouse','collision','staticcollidable','keyboard','quake','resources'],function(document,Game,cclass,Vector,editor,mouse,collision,StaticCollidable,keyboard,quake,resources) {
+require(['domready!','game','cclass','vector','editor','mouse','collision','staticcollidable','keyboard','quake','resources','kongregate'],function(document,Game,cclass,Vector,editor,mouse,collision,StaticCollidable,keyboard,quake,resources,kongregate) {
 	var canvas = document.getElementById('main');
 	var t = new Vector(0,0);
 	var t2 = new Vector(0,0);
@@ -54,7 +54,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		images: ['ball1','ball2','spring','grass','ground','flag','arrow'],
 		audio: ['finish','start','stop','deny','add1','add2','add3','remove1','remove2','remove3']
 	};
-	var g = new Game(startGame, canvas, [mouse,keyboard,resources(rs),collision,quake]);
+	var g = new Game(startGame, canvas, [mouse,keyboard,resources(rs),collision,quake,kongregate]);
 	var game = g;
 	g.resources.status.on('changed',function() {
 		g.graphics.context.clearRect(0,0,800,600);
@@ -888,6 +888,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	function finished(finishtime) {
 		var currentlevel = null;
 		var nextLevel = null;
+
 		function update(dt,next) {
 			var pos = new Vector();
 			var size = new Vector();
@@ -943,6 +944,11 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		function enable() {
 			currentlevel = g.level;
 			nextLevel = g.level.nextLevel();
+
+			if (g.kongregate) {
+				g.kongregate.stats.submit('finishtime_'+currentlevel.name,finishtime);
+			}
+
 			g.ChangeLevel(null);
 			g.chains.update.push(update);
 			g.chains.draw.push(draw);
@@ -1057,6 +1063,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function tutorial1() {
 		return {
+			name: 'Tutorial 1',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1080,6 +1087,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function tutorial2() {
 		return {
+			name: 'Tutorial 2',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1103,6 +1111,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function tutorial3() {
 		return {
+			name: 'Tutorial 3',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1128,6 +1137,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level1() {
 		return {
+			name: 'Level 1',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,200),
@@ -1145,6 +1155,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level2() {
 		return {
+			name: 'Level 2',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1161,6 +1172,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level3() {
 		return {
+			name: 'Level 3',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1178,6 +1190,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level4() {
 		return {
+			name: 'Level 4',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1202,6 +1215,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level5() {
 		return {
+			name: 'Level 5',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1234,6 +1248,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function level6() {
 		return {
+			name: 'Level 6',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
@@ -1258,6 +1273,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 
 	function sandboxlevel() {
 		return {
+			name: 'Sandbox',
 			objects: [new StaticCollidable([
 				new Vector(0,0),
 				new Vector(0,500),
