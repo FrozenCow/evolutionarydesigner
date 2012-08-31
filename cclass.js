@@ -17,8 +17,6 @@ define(function() {
 		var prototype = args.shift();
 		var mixins = args;
 
-		console.log('class', methods);
-
 		// Make a new constructor if there isn't any defined.
 		if (!methods.hasOwnProperty('constructor')) {
 			methods.constructor = function UnnamedClass() { };
@@ -29,7 +27,6 @@ define(function() {
 		methods.prototype = prototype;
 
 		mixins.forEach(function(mixin) {
-			console.log('mixin', mixin);
 			mix(methods, mixin);
 		});
 
