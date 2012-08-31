@@ -2,32 +2,37 @@ define(['eventemitter'],function(eventemitter) {
 	function extend(a,b) {
 		for(var n in b) { a[n] = b[n]; }
 	}
-	function resources(g) {
-		g.resources = resources;
-	}
-	resources.toString = Object.prototype.toString;
-	extend(resources,{
-		images: {},
-		audio: {},
-		loadImage: function(name,complete,error) {
+	return function(rs) {
+		var preloadStatus = {
+			ready: 0,
+			total: 0,
+			errors: 0
+		};
+		extend(preloadStatus,eventemitter);
+
+		var resources = {
+			status: preloadStatus,
+			images: {},
+			audio: {},
+			loadImage: loadImage,
+			loadAudio: loadAudio
+		};
+
+		function loadImage(name,callback) {
 			var me = this;
 			var img = new Image();
 			img.src = name+'.png';
-			if (complete) {
-				img.onload = function() {
-					me.images[name] = img;
-					complete(img);
-				};
-			}
-			if (error) {
-				img.onerror = function() {
-					console.error('Could not load image',name);
-					error();
-				};
-			}
+			img.onload = function() {
+				me.images[name] = img;
+				callback(null,img);
+			};
+			img.onerror = function() {
+				callback('Could not load image '+name);
+			};
 			return img;
-		},
-		loadAudio: function(name,complete,error) {
+		}
+
+		function loadAudio(name,callback) {
 			var me = this;
 			var isdone = false;
 			var checkinterval = 10;
@@ -35,12 +40,11 @@ define(['eventemitter'],function(eventemitter) {
 			var a = new Audio(name+'.wav');
 			try {
 				a.addEventListener('canplaythrough', markdone, false);
-			} catch(e) { }
+			} catch(e) { console.error(e); }
 			function checkReady() {
 				if (isdone) { return; }
 				if (loadtime > 5000) {
-					console.error('Could not load audio',name);
-					return error();
+					return callback('Could not load audio '+name);
 				}
 				if (a.readyState) {
 					markdone();
@@ -53,53 +57,62 @@ define(['eventemitter'],function(eventemitter) {
 				a.removeEventListener('canplaythrough', markdone);
 				isdone = true;
 				me.audio[name] = a;
-				complete(a);
+				callback(null,a);
 			}
 			checkReady();
-		},
-		preload: function(obj,complete,error) {
-			var me = this;
-			var status = {
-				total: 0,
-				ready: 0,
-				errors: 0
-			};
-			extend(status,eventemitter);
+		}
 
-			function loadMultiple(type,loadfunction) {
-				if (!obj[type]) { return; }
-				obj[type].forEach(function(name) {
-					status.total++;
-					me[loadfunction](name,done,error);
-				});
+		var isPreloaded = false;
+		var onpreloaded = null;
+		preload(resources,rs,function(err) {
+			if (err) { console.error(err); }
+			isPreloaded = true;
+			if (onpreloaded) { onpreloaded(); }
+		});
+
+		return function(g,callback) {
+			g.resources = resources;
+			if (!isPreloaded) {
+				onpreloaded = callback;
+				return callback;
 			}
-			loadMultiple('images','loadImage');
-			loadMultiple('audio','loadAudio');
+		};
+	};
 
-			function done() {
+	function preload(resources,preloadResources,callback) {
+		var me = this;
+		var status = resources.status;
+
+		function loadMultiple(type,loadfunction) {
+			if (!preloadResources[type]) { return; }
+			preloadResources[type].forEach(function(name) {
+				status.total++;
+				resources[loadfunction](name,onResourceLoaded);
+			});
+		}
+		loadMultiple('images','loadImage');
+		loadMultiple('audio','loadAudio');
+
+		function onResourceLoaded(err) {
+			if (err) {
+				status.errors++;
+				status.emit('changed');
+				checkdone();
+			} else {
 				status.ready++;
 				status.emit('changed');
 				checkdone();
 			}
+		}
 
-			function loaderror() {
-				status.errors++;
-				status.emit('changed');
-				checkdone();
-			}
-
-			function checkdone() {
-				if (status.total <= status.ready+status.errors) {
-					if (status.errors > 0) {
-						error();
-					} else {
-						complete();
-					}
+		function checkdone() {
+			if (status.total <= status.ready+status.errors) {
+				if (status.errors > 0) {
+					callback('Not all resources were loaded');
+				} else {
+					callback();
 				}
 			}
-
-			return status;
 		}
-	});
-	return resources;
-})
+	}
+});

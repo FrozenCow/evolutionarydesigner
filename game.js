@@ -16,7 +16,7 @@ define(['eventemitter','cclass','objectmanager','graphics'], function(eventemitt
 	}
 
 	return cclass(Object,eventemitter,{
-		constructor: function(canvas, components) {
+		constructor: function(start, canvas, components) {
 			var me = this;
 
 			this.objects = new ObjectManager(['update','draw']);
@@ -38,12 +38,20 @@ define(['eventemitter','cclass','objectmanager','graphics'], function(eventemitt
 			this.graphics = new Graphics(canvas.getContext('2d'));
 			this.time = 0;
 
-			if (components) {
-				components.forEach(function(c) {
-					c(me);
-				});
-				this.components = components;
+			var componentsLoaded = 0;
+			components.forEach(function(c) {
+				var result = c(me,componentLoaded);
+				if (result !== componentLoaded) {
+					componentLoaded();
+				}
+			});
+			function componentLoaded() {
+				componentsLoaded++;
+				if (componentsLoaded === components.length) {
+					start();
+				}
 			}
+			this.components = components;
 		},
 		start: function() {
 			if (this.isRunning) { throw 'Already started'; }

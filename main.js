@@ -50,23 +50,21 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 	var canvas = document.getElementById('main');
 	var t = new Vector(0,0);
 	var t2 = new Vector(0,0);
-	var g = new Game(canvas, [mouse,keyboard,resources,collision,quake,editor]);
-	var game = g;
-	var preloadStatus = g.resources.preload({
+	var rs = {
 		images: ['ball1','ball2','spring','grass','ground','flag','arrow'],
 		audio: ['finish','start','stop','deny','add1','add2','add3','remove1','remove2','remove3']
-	},startGame,function() {
-		console.error('Could not load all files! Continuing anyway...');
-		startGame();
-	});
-	preloadStatus.on('changed',function() {
+	};
+	var g = new Game(startGame, canvas, [mouse,keyboard,resources(rs),collision,quake]);
+	var game = g;
+	g.resources.status.on('changed',function() {
 		g.graphics.context.clearRect(0,0,800,600);
 		g.graphics.context.fillStyle = 'black';
 		g.graphics.context.font = 'monospace';
-		g.graphics.fillCenteredText('Preloading ' + preloadStatus.ready + '/' + preloadStatus.total + '...',400,300);
+		g.graphics.fillCenteredText('Preloading ' + g.resources.status.ready + '/' + g.resources.status.total + '...',400,300);
 	});
 
-	function startGame() {
+	function startGame(err) {
+	if (err) { console.error(err); }
 	var images = g.resources.images;
 	var audio = g.resources.audio;
 
