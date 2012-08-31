@@ -61,7 +61,7 @@ define(['eventemitter','cclass','objectmanager','graphics'], function(eventemitt
 			me.running = runningToken;
 			this.canvas.setAttribute('tabIndex', '0');
 			this.canvas.focus();
-			this.canvas.oncontextmenu = function() { return false; }
+			this.canvas.oncontextmenu = function() { return false; };
 
 			var requestAnimationFrame =
 				window.requestAnimationFrame ||
