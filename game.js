@@ -1,4 +1,4 @@
-define(['eventemitter','cclass','objectmanager','graphics'], function(eventemitter,cclass,ObjectManager,Graphics) {
+define(['eventemitter','objectmanager','graphics'], function(eventemitter,ObjectManager,Graphics) {
 	function chain(fs,next) {
 		function call(i,args) {
 			if (i < fs.length) {
@@ -15,89 +15,92 @@ define(['eventemitter','cclass','objectmanager','graphics'], function(eventemitt
 		};
 	}
 
-	return cclass(Object,eventemitter,{
-		constructor: function(start, canvas, components) {
-			var me = this;
+	function Game(start, canvas, components) {
+		var me = this;
 
-			this.objects = new ObjectManager(['update','draw']);
-			this.chains = {
-				draw: [],
-				update: []
-			};
+		this.objects = new ObjectManager();
+		this.objects.lists.update = this.objects.createIndexList('updatable');
+		this.objects.lists.draw = this.objects.createIndexList('drawable');
+		this.chains = {
+			draw: [],
+			update: []
+		};
 
-			this.chains.draw.push(this.chains.draw.objects = function(g,next) {
-				me.objects.lists.draw.each(function(o) {
-					o.draw(g);
-				});
-				next(g);
+		this.chains.draw.push(this.chains.draw.objects = function(g,next) {
+			me.objects.lists.draw.each(function(o) {
+				o.draw(g);
 			});
+			next(g);
+		});
 
-			this.width = canvas.width;
-			this.height = canvas.height;
-			this.canvas = canvas;
-			this.graphics = new Graphics(canvas.getContext('2d'));
-			this.time = 0;
+		this.width = canvas.width;
+		this.height = canvas.height;
+		this.canvas = canvas;
+		this.graphics = new Graphics(canvas.getContext('2d'));
+		this.time = 0;
 
-			var componentsLoaded = 0;
-			components.forEach(function(c) {
-				var result = c(me,componentLoaded);
-				if (result !== componentLoaded) {
-					componentLoaded();
-				}
-			});
-			function componentLoaded() {
-				componentsLoaded++;
-				if (componentsLoaded === components.length) {
-					start();
-				}
+		var componentsLoaded = 0;
+		components.forEach(function(c) {
+			var result = c(me,componentLoaded);
+			if (result !== componentLoaded) {
+				componentLoaded();
 			}
-			this.components = components;
-		},
-		start: function() {
-			if (this.isRunning) { throw 'Already started'; }
-			var me = this;
-			var runningToken = {};
-			me.time = 0;
-			me.running = runningToken;
-			this.canvas.setAttribute('tabIndex', '0');
-			this.canvas.focus();
-			this.canvas.oncontextmenu = function() { return false; };
-
-			var requestAnimationFrame =
-				window.requestAnimationFrame ||
-				window.mozRequestAnimationFrame ||
-				window.webkitRequestAnimationFrame ||
-				window.msRequestAnimationFrame ||
-				function(callback) { window.setTimeout(callback, 1000 / 60); };
-
-			var lastUpdate=new Date().getTime();
-			requestAnimationFrame(update);
-			function update() {
-				var now=new Date().getTime();
-				var dt = (now-lastUpdate)/1000;
-				lastUpdate = now;
-				dt = Math.min(1/30,dt);
-
-				me.time += dt;
-
-				chain(me.chains.update,function(dt) {
-					me.objects.lists.update.each(function(o) {
-						o.update(dt);
-					});
-					me.objects.handlePending();
-				})(dt);
-
-				me.graphics.clear();
-
-				chain(me.chains.draw,function(g) {})(me.graphics);
-
-				if (me.running === runningToken) {
-					requestAnimationFrame(update);
-				}
+		});
+		function componentLoaded() {
+			componentsLoaded++;
+			if (componentsLoaded === components.length) {
+				start();
 			}
-		},
-		stop: function() {
-			delete this.running;
 		}
-	});
+		this.components = components;
+	}
+	var p = Game.prototype;
+	eventemitter._inherit(p);
+	p.start = function() {
+		if (this.isRunning) { throw 'Already started'; }
+		var me = this;
+		var runningToken = {};
+		me.time = 0;
+		me.running = runningToken;
+		this.canvas.setAttribute('tabIndex', '0');
+		this.canvas.focus();
+		this.canvas.oncontextmenu = function() { return false; };
+
+		var requestAnimationFrame =
+			window.requestAnimationFrame ||
+			window.mozRequestAnimationFrame ||
+			window.webkitRequestAnimationFrame ||
+			window.msRequestAnimationFrame ||
+			function(callback) { window.setTimeout(callback, 1000 / 60); };
+
+		var lastUpdate=new Date().getTime();
+		requestAnimationFrame(update);
+		function update() {
+			var now=new Date().getTime();
+			var dt = (now-lastUpdate)/1000;
+			lastUpdate = now;
+			dt = Math.min(1/30,dt);
+
+			me.time += dt;
+
+			chain(me.chains.update,function(dt) {
+				me.objects.lists.update.each(function(o) {
+					o.update(dt);
+				});
+				me.objects.handlePending();
+			})(dt);
+
+			me.graphics.clear();
+
+			chain(me.chains.draw,function(g) {})(me.graphics);
+
+			if (me.running === runningToken) {
+				requestAnimationFrame(update);
+			}
+		}
+	};
+	p.stop = function() {
+		delete this.running;
+	};
+	return Game;
 });

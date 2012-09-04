@@ -1,5 +1,12 @@
 define(function() {
 	return {
+		_inherit: function(o) {
+			o._getEvents = this._getEvents;
+			o.on = this.on;
+			o.once = this.once;
+			o.removeListener = this.removeListener;
+			o.emit = this.emit;
+		},
 		_getEvents: function() {
 			var e = this.events;
 			if (!e) {

@@ -1,7 +1,6 @@
 define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 	return function(game) {
 		var g = game;
-		g.objects.addIndex('serialize');
 		var tools = {
 			'0': { // Draw
 				mousemove: function(x,y) {
@@ -30,7 +29,7 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 			'1': {
 				mousedown: function(button,x,y) {
 					var me = this;
-					game.objects.lists.collisionlines.each(function(cls) {
+					game.objects.lists.collidable.each(function(cls) {
 						for(var i=0;i<cls.collisionlines.length;i++) {
 							if (cls.collisionlines[i].end.distanceTo(x,y) < 10) {
 								me.grabbed = cls.collisionlines[i];
@@ -53,7 +52,7 @@ define(['vector','staticcollidable'],function(Vector,StaticCollidable){
 					me.grabbed = null;
 				},
 				draw: function(g) {
-					game.objects.lists.collisionlines.each(function(cls) {
+					game.objects.lists.collidable.each(function(cls) {
 						cls.collisionlines.forEach(function(cl) {
 							g.fillCircle(cl.start.x,cl.start.y,10);
 						});

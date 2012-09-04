@@ -46,34 +46,69 @@ function slide(a,b) {
 	return (b?1:0)-(a?1:0);
 }
 
-require(['domready!','game','cclass','vector','editor','required','mouse','collision','staticcollidable','keyboard','quake','resources','kongregate'],function(document,Game,cclass,Vector,editor,required,mouse,collision,StaticCollidable,keyboard,quake,resources,kongregate) {
-	if (!document) { return; }
-	var canvas = document.getElementById('main');
+function domLoaded(cb) {
+	var loaded = false;
+	function callback() {
+		if (!loaded) { loaded=true; cb(); }
+	}
+    /* Internet Explorer */
+    /*@cc_on
+    @if (@_win32 || @_win64)
+        document.write('<script id="ieScriptLoad" defer src="//:"><\/script>');
+        document.getElementById('ieScriptLoad').onreadystatechange = function() {
+            if (this.readyState == 'complete') {
+                callback();
+            }
+        };
+    @end @*/
+    /* Mozilla, Chrome, Opera */
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', callback, false);
+    }
+    /* Safari, iCab, Konqueror */
+    if (/KHTML|WebKit|iCab/i.test(navigator.userAgent)) {
+        var DOMLoadTimer = setInterval(function () {
+            if (/loaded|complete/i.test(document.readyState)) {
+                callback();
+                clearInterval(DOMLoadTimer);
+            }
+        }, 10);
+    }
+    /* Other web browsers */
+    window.onload = callback;
+}
+
+define(['game','vector','editor','required','mouse','collision','staticcollidable','keyboard','quake','resources','kongregate'],function(Game,Vector,editor,required,mouse,collision,StaticCollidable,keyboard,quake,resources,kongregate) {
 	var t = new Vector(0,0);
 	var t2 = new Vector(0,0);
 	var rs = {
-		images: ['ball1','ball2','spring','grass','ground','flag','arrow'],
-		audio: ['finish','start','stop','deny','add1','add2','add3','remove1','remove2','remove3']
+		'images': ['ball1','ball2','spring','grass','ground','flag','arrow'],
+		'audio': ['finish','start','stop','deny','add1','add2','add3','remove1','remove2','remove3']
 	};
-	var g = new Game(startGame, canvas, [required(['chrome']),mouse,keyboard,resources(rs),collision,quake,kongregate]);
-	var game = g;
-	g.resources.status.on('changed',function() {
-		g.graphics.context.clearRect(0,0,800,600);
-		g.graphics.context.fillStyle = 'black';
-		g.graphics.context.font = 'monospace';
-		g.graphics.fillCenteredText('Preloading ' + g.resources.status.ready + '/' + g.resources.status.total + '...',400,300);
-	});
+
+	var g,game;
+	domLoaded(onDomReady);
+	function onDomReady() {
+		var canvas = document.getElementById('main');
+		game = g = new Game(startGame, canvas, [required(['chrome']),mouse,keyboard,resources(rs),collision,quake,kongregate]);
+		g.resources.status.on('changed',function() {
+			g.graphics.context.clearRect(0,0,800,600);
+			g.graphics.context.fillStyle = 'black';
+			g.graphics.context.font = 'monospace';
+			g.graphics.fillCenteredText('Preloading ' + g.resources.status.ready + '/' + g.resources.status.total + '...',400,300);
+		});
+	}
 
 	function startGame(err) {
 	if (err) { console.error(err); }
 	var images = g.resources.images;
 	var audio = g.resources.audio;
 
-	g.objects.addIndex('particle');
-	g.objects.addIndex('spring');
-	g.objects.addIndex('start');
-	g.objects.addIndex('finish');
-	g.objects.addIndex('collisionlines');
+	g.objects.lists.particle = g.objects.createIndexList('particle');
+	g.objects.lists.spring = g.objects.createIndexList('spring');
+	g.objects.lists.start = g.objects.createIndexList('start');
+	g.objects.lists.finish = g.objects.createIndexList('finish');
+	g.objects.lists.collidable = g.objects.createIndexList('collidable');
 
 	var screenCollidable = new StaticCollidable([
 		new Vector(0,0),
@@ -106,72 +141,71 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 		
 	})();
 
-	var Particle = cclass({
-		particle: true,
-		constructor: function(x,y) {
-			this.position = new Vector(x,y);
-			this.velocity = new Vector(0,0);
-			this.springs = [];
-			this.image = images['ball'+Math.floor(Math.random()*2+1)];
-		},
-		update: function(dt) {
-			this.position.add(this.velocity.x*dt,this.velocity.y*dt);
-			this.velocity.multiply(0.99);
-		},
-		direction: function(v) {
-			if (this.springs.length > 0) { v.set(0,1); return; }
-			var spring = this.springs[0];
-			var other = (spring.p1 === this) ? spring.p2 : spring.p1;
-			v.setV(other.position);
-			v.substractV(this.position);
-		}
-	});
 
-	var Spring = cclass({
-		spring: true,
-		constructor: function(p1,p2) {
-			this.p1 = p1;
-			this.p2 = p2;
-			this.p1.springs.push(this);
-			this.p2.springs.push(this);
-			this.desiredLength = 100;
-			this.springConstant = 50;
-			this.retracted = false;
-		},
-		distanceTo: function(x,y) {
-			t2.setV(this.p2.position);
-			t2.substractV(this.p1.position);
-			var len = t2.length();
-			t2.normalizeOr(0,1);
-			var fdot = t2.dot(x-this.p1.position.x,y-this.p1.position.y);
-			if (fdot < 0) { return this.p1.position.distanceTo(x,y); }
-			else if (fdot > len) { return this.p2.position.distanceTo(x,y); }
-			t2.normalRight();
-			var sdot = t2.dot(x-this.p1.position.x,y-this.p1.position.y);
-			return Math.abs(sdot);
-		},
-		update: function(dt) {
-			var desiredLength = this.desiredLength * (this.retracted ? 0.5 : 1.0);
-			var p1 = this.p1;
-			var p2 = this.p2;
-			t.setV(p1.position);
-			t.substractV(p2.position);
-			var l = t.length();
-			t.normalizeOr(0,0);
+	function Particle(x,y) {
+		this.position = new Vector(x,y);
+		this.velocity = new Vector(0,0);
+		this.springs = [];
+		this.image = images['ball'+Math.floor(Math.random()*2+1)];
+	}
+	Particle.prototype['particle'] = true;
+	Particle.prototype['updatable'] = true;
+	Particle.prototype.update = function(dt) {
+		this.position.add(this.velocity.x*dt,this.velocity.y*dt);
+		this.velocity.multiply(0.99);
+	};
+	Particle.prototype.direction = function(v) {
+		if (this.springs.length > 0) { v.set(0,1); return; }
+		var spring = this.springs[0];
+		var other = (spring.p1 === this) ? spring.p2 : spring.p1;
+		v.setV(other.position);
+		v.substractV(this.position);
+	};
 
-			var v1 = p1.velocity.dotV(t);
-			var v2 = p2.velocity.dotV(t);
+	function Spring(p1,p2) {
+		this.p1 = p1;
+		this.p2 = p2;
+		this.p1.springs.push(this);
+		this.p2.springs.push(this);
+		this.desiredLength = 100;
+		this.springConstant = 50;
+		this.retracted = false;
+	}
+	Spring.prototype['spring'] = true;
+	Spring.prototype['updatable'] = true;
+	Spring.prototype.distanceTo = function(x,y) {
+		t2.setV(this.p2.position);
+		t2.substractV(this.p1.position);
+		var len = t2.length();
+		t2.normalizeOr(0,1);
+		var fdot = t2.dot(x-this.p1.position.x,y-this.p1.position.y);
+		if (fdot < 0) { return this.p1.position.distanceTo(x,y); }
+		else if (fdot > len) { return this.p2.position.distanceTo(x,y); }
+		t2.normalRight();
+		var sdot = t2.dot(x-this.p1.position.x,y-this.p1.position.y);
+		return Math.abs(sdot);
+	};
+	Spring.prototype.update = function(dt) {
+		var desiredLength = this.desiredLength * (this.retracted ? 0.5 : 1.0);
+		var p1 = this.p1;
+		var p2 = this.p2;
+		t.setV(p1.position);
+		t.substractV(p2.position);
+		var l = t.length();
+		t.normalizeOr(0,0);
 
-			t.multiply((desiredLength - l)*dt*this.springConstant - (v1-v2)*0.1);
+		var v1 = p1.velocity.dotV(t);
+		var v2 = p2.velocity.dotV(t);
 
-			p1.velocity.addV(t);
-			p2.velocity.substractV(t);
-		},
-		detach: function() {
-			this.p1.springs.remove(this);
-			this.p2.springs.remove(this);
-		}
-	});
+		t.multiply((desiredLength - l)*dt*this.springConstant - (v1-v2)*0.1);
+
+		p1.velocity.addV(t);
+		p2.velocity.substractV(t);
+	};
+	Spring.prototype.detach = function() {
+		this.p1.springs.remove(this);
+		this.p2.springs.remove(this);
+	};
 
 	function drawSpring(g,s,highlighted) {
 		var cx = (s.p1.position.x+s.p2.position.x)*0.5;
@@ -185,7 +219,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 			sy += Math.sin(game.time*8)*0.03;
 		}
 		g.scalerotate(cx,cy,sx,sy,angle,function() {
-			g.drawCenteredImage(images.spring,cx,cy);
+			g.drawCenteredImage(images['spring'],cx,cy);
 		});
 	}
 
@@ -202,134 +236,129 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 		});
 	}
 
-	var Creature = cclass({
-		constructor: function(particles,springs) {
-			this.particles = particles||[];
-			this.springs = springs||[];
-			this.highlight = null;
-		},
-		boundingBox: function(position,size) {
-			var minx,maxx,miny,maxy;
-			maxx = maxy = -Infinity;
-			minx = miny = Infinity;
-			this.particles.forEach(function(p) {
-				maxx = Math.max(maxx,p.position.x);
-				maxy = Math.max(maxy,p.position.y);
-				minx = Math.min(minx,p.position.x);
-				miny = Math.min(miny,p.position.y);
-			});
-			position.set(minx,miny);
-			size.set(maxx-minx,maxy-miny);
-		},
-		move: function(p) {
-			this.particles.forEach(function(particle) {
-				particle.position.addV(p);
-				particle.velocity.set(0,0);
-			});
-		},
-		center: function(p) {
-			var size = new Vector();
-			this.boundingBox(p,size);
-			p.add(size.x*0.5,size.y*0.5);
-		},
-		draw: function(g) {
-			var highlight = this.highlight;
-			this.springs.forEach(function(s) {
-				drawSpring(g,s,s === highlight);
-			});
-			this.particles.forEach(function(p) {
-				drawParticle(g,p,p === highlight);
-			});
-		}
-	});
+	function Creature(particles,springs) {
+		this.particles = particles||[];
+		this.springs = springs||[];
+		this.highlight = null;
+	}
+	Creature.prototype['drawable'] = true;
+	Creature.prototype.boundingBox = function(position,size) {
+		var minx,maxx,miny,maxy;
+		maxx = maxy = -Infinity;
+		minx = miny = Infinity;
+		this.particles.forEach(function(p) {
+			maxx = Math.max(maxx,p.position.x);
+			maxy = Math.max(maxy,p.position.y);
+			minx = Math.min(minx,p.position.x);
+			miny = Math.min(miny,p.position.y);
+		});
+		position.set(minx,miny);
+		size.set(maxx-minx,maxy-miny);
+	};
+	Creature.prototype.move = function(p) {
+		this.particles.forEach(function(particle) {
+			particle.position.addV(p);
+			particle.velocity.set(0,0);
+		});
+	};
+	Creature.prototype.center = function(p) {
+		var size = new Vector();
+		this.boundingBox(p,size);
+		p.add(size.x*0.5,size.y*0.5);
+	};
+	Creature.prototype.draw = function(g) {
+		var highlight = this.highlight;
+		this.springs.forEach(function(s) {
+			drawSpring(g,s,s === highlight);
+		});
+		this.particles.forEach(function(p) {
+			drawParticle(g,p,p === highlight);
+		});
+	};
+
 	Creature.toJson = function(creature) {
 		var id = 0;
 		return {
-			particles: creature.particles.map(function(p) { p.id = id++; return {id:p.id,posx:p.position.x,posy:p.position.y}; }),
-			springs: creature.springs.map(function(s) { return {aid:s.p1.id,bid:s.p2.id,keys:s.keys||undefined}; })
+			'particles': creature.particles.map(function(p) { p.id = id++; return {'id':p.id,'posx':p.position.x,'posy':p.position.y}; }),
+			'springs': creature.springs.map(function(s) { return {'aid':s.p1.id,'bid':s.p2.id,'keys':s.keys||undefined}; })
 		};
 	};
 	Creature.fromJson = function(json) {
 		var particleids = {};
-		var particles = json.particles.map(function(p) {
-			return particleids[p.id] = new Particle(p.posx,p.posy);
+		var particles = json['particles'].map(function(p) {
+			return particleids[p.id] = new Particle(p['posx'],p['posy']);
 		});
-		var springs = json.springs.map(function(s) {
-			var ns = new Spring(particleids[s.aid],particleids[s.bid]);
-			ns.keys = s.keys;
+		var springs = json['springs'].map(function(s) {
+			var ns = new Spring(particleids[s['aid']],particleids[s['bid']]);
+			ns.keys = s['keys'];
 			return ns;
 		});
 		return new Creature(particles,springs);
 	};
 
-	var Start = cclass({
-		start: true,
-		constructor: function(x,y,sx,sy) {
-			this.x = x; this.y = y;
-			this.sx = sx; this.sy = sy;
-		},
-		draw: function(g) {
-			g.context.strokeStyle = 'green';
-			g.strokeRectangle(this.x,this.y,this.sx,this.sy);
-			g.context.strokeStyle = 'black';
-		}
-	});
+	function Start(x,y,sx,sy) {
+		this.x = x; this.y = y;
+		this.sx = sx; this.sy = sy;
+	}
+	Start.prototype['start'] = true;
+	Start.prototype['drawable'] = true;
+	Start.prototype.draw = function(g) {
+		g.context.strokeStyle = 'green';
+		g.strokeRectangle(this.x,this.y,this.sx,this.sy);
+		g.context.strokeStyle = 'black';
+	};
 
-	var Finish = cclass({
-		finish: true,
-		constructor: function(x,y,angle) {
-			this.position = new Vector(x,y);
-			this.angle = angle || 0;
-		},
-		draw: function(g) {
-			var me = this;
-			g.rotate(this.position.x,this.position.y,this.angle,function() {
-				g.drawCenteredImage(images.flag,me.position.x,me.position.y);
-			});
-		}
-	});
+	function Finish(x,y,angle) {
+		this.position = new Vector(x,y);
+		this.angle = angle || 0;
+	}
+	Finish.prototype['finish'] = true;
+	Finish.prototype['drawable'] = true;
+	Finish.prototype.draw = function(g) {
+		var me = this;
+		g.rotate(this.position.x,this.position.y,this.angle,function() {
+			g.drawCenteredImage(images['flag'],me.position.x,me.position.y);
+		});
+	};
 
-	var StaticArrow = cclass({
-		constructor: function(x,y,angle,scale) {
-			this.position = new Vector(x,y);
-			this.angle = angle;
-			this.scale = scale || 1.0;
-		},
-		draw: function(g) {
-			var me = this;
-			g.scalerotate(this.position.x, this.position.y, this.scale, this.scale, this.angle*Math.PI/180,function() {
-				g.drawCenteredImage(images.arrow, me.position.x, me.position.y);
-			});
-		}
-	});
+	function StaticArrow(x,y,angle,scale) {
+		this.position = new Vector(x,y);
+		this.angle = angle;
+		this.scale = scale || 1.0;
+	}
+	StaticArrow.prototype['drawable'] = true;
+	StaticArrow.prototype.draw = function(g) {
+		var me = this;
+		g.scalerotate(this.position.x, this.position.y, this.scale, this.scale, this.angle*Math.PI/180,function() {
+			g.drawCenteredImage(images['arrow'], me.position.x, me.position.y);
+		});
+	};
 
-	var StaticText = cclass({
-		constructor: function(x,y,text,font) {
-			this.position = new Vector(x,y);
-			this.font = font || '20px Permanent Marker';
-			this.text = text;
-		},
-		draw: function(g) {
-			g.context.fillStyle = 'white';
-			g.context.font = this.font;
-			g.fillCenteredText(this.text,this.position.x,this.position.y);
-		}
-	});
+	function StaticText(x,y,text,font) {
+		this.position = new Vector(x,y);
+		this.font = font || '20px Permanent Marker';
+		this.text = text;
+	}
+	StaticText.prototype['drawable'] = true;
+	StaticText.prototype.draw = function(g) {
+		g.context.fillStyle = 'white';
+		g.context.font = this.font;
+		g.fillCenteredText(this.text,this.position.x,this.position.y);
+	};
 
-	var StaticImage = cclass({
-		constructor: function(x,y,image) {
-			this.position = new Vector(x,y);
-			this.image = image;
-		},
-		draw: function(g) {
-			g.drawCenteredImage(this.image,this.position.x,this.position.y);
-		}
-	});
+	function StaticImage(x,y,image) {
+		this.position = new Vector(x,y);
+		this.image = image;
+	}
+	StaticImage.prototype['drawable'] = true;
+	StaticImage.prototype.draw = function(g) {
+		g.drawCenteredImage(this.image,this.position.x,this.position.y);
+	};
 
 	// Collision
 	g.chains.update.push(function(dt,next) {
 		g.objects.lists.particle.each(function(p) {
-			g.objects.lists.collisionlines.each(function(cls) {
+			g.objects.lists.collidable.each(function(cls) {
 				if (cls.inverted) {
 					cls.collisionlines.forEach(function(cl) {
 						t.setV(p.position);
@@ -423,7 +452,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 
 	function updateLevelGraphics() {
 		maskCtx = foregroundCanvas.getContext('2d');
-		var groundPattern = maskCtx.createPattern(images.ground,'repeat');
+		var groundPattern = maskCtx.createPattern(images['ground'],'repeat');
 		maskCtx.globalCompositeOperation = 'source-over';
 		maskCtx.fillStyle = groundPattern;
 		maskCtx.fillRect(0,0,800,600);
@@ -441,7 +470,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 			maskCtx.closePath();
 		}
 		var count = 0;
-		game.objects.lists.collisionlines.each(function(cls) {
+		game.objects.lists.collidable.each(function(cls) {
 			if (cls.inverted) {
 				pathCollisionLines(cls); count++;
 				maskCtx.fill();
@@ -452,7 +481,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 		}
 
 		maskCtx.globalCompositeOperation = 'source-over';
-		game.objects.lists.collisionlines.each(function(cls) {
+		game.objects.lists.collidable.each(function(cls) {
 			if (!cls.inverted) {
 				pathCollisionLines(cls);
 				maskCtx.fill();
@@ -463,7 +492,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 
 		g.drawImage(foregroundCanvas,0,0);
 
-		game.objects.lists.collisionlines.each(function(cls) {
+		game.objects.lists.collidable.each(function(cls) {
 			cls.collisionlines.forEach(function(cl) {
 				if (cls.inverted && cl.normal.y < 0 || !cls.inverted && cl.normal.y > 0) {
 					var step = 69;
@@ -484,7 +513,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 					var angle = Math.atan2(t.y,t.x);
 					g.rotate(start.x,start.y,angle,function() {
 						while (drawn < cl.length) {
-							g.drawCenteredImage(images.grass,start.x+drawn,start.y+offset);
+							g.drawCenteredImage(images['grass'],start.x+drawn,start.y+offset);
 							t2.addV(t);
 							drawn += step;
 						}
@@ -566,19 +595,19 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 		g.ChangeLevel(nextLevel);
 	};
 	g.ChangeCreature = function(json) {
-		if (this.creature) {
-			this.creature.particles.forEach(function(p) { g.objects.remove(p); });
-			this.creature.springs.forEach(function(s) { g.objects.remove(s); });
-			g.objects.remove(this.creature);
+		if (g.creature) {
+			g.creature.particles.forEach(function(p) { g.objects.remove(p); });
+			g.creature.springs.forEach(function(s) { g.objects.remove(s); });
+			g.objects.remove(g.creature);
 			springKeys = {};
 		}
 
 		if (json) {
-			this.creature = Creature.fromJson(json);
+			g.creature = Creature.fromJson(json);
 
 			springKeys = {};
-			this.creature.particles.forEach(function(p) { g.objects.add(p); });
-			this.creature.springs.forEach(function(s) {
+			g.creature.particles.forEach(function(p) { g.objects.add(p); });
+			g.creature.springs.forEach(function(s) {
 				g.objects.add(s);
 				if (s.keys) {
 					s.keys.forEach(function(k) {
@@ -587,11 +616,11 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 					});
 				}
 			});
-			g.objects.add(this.creature);
+			g.objects.add(g.creature);
 		} else {
-			this.creature = null;
+			g.creature = null;
 		}
-		return this.creature;
+		return g.creature;
 	};
 
 	function designmode() {
@@ -632,7 +661,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 				textbox('Load','',function(text) {
 					var json;
 					try {
-						json = JSON.parse(text)
+						json = JSON.parse(text);
 					} catch(e) { }
 					if (json) {
 						g.ChangeCreature(json);
@@ -671,7 +700,7 @@ require(['domready!','game','cclass','vector','editor','required','mouse','colli
 				if (game.creature.highlight && game.creature.highlight.particle) {
 					end = game.creature.highlight;
 				} else {
-					end = {position:new Vector(game.mouse.x,game.mouse.y),image:images.ball1};
+					end = {position:new Vector(game.mouse.x,game.mouse.y),image:images['ball1']};
 					drawEnd = true;
 				}
 				g.context.globalAlpha = 0.5;

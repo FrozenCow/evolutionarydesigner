@@ -1,7 +1,7 @@
 define(['vector'],function(Vector) {
 	return function(game) {
-		game.objects.addIndex('collide');
-		game.objects.addIndex('collisionlines');
+		game.objects.lists.collide = game.objects.createIndexList('collide');
+		game.objects.lists.collidable = game.objects.createIndexList('collidable');
 		game.on('postupdate',function() {
 			game.emit('precollision');
 			handleCollision();
@@ -13,7 +13,7 @@ define(['vector'],function(Vector) {
 			var t2 = new Vector(0,0);
 			
 			var collisionlines = [];
-			game.objects.lists.collisionlines.each(function(o) {
+			game.objects.lists.collidable.each(function(o) {
 				collisionlines = collisionlines.concat(o.collisionlines);
 			});
 

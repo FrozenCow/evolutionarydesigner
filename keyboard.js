@@ -1,12 +1,12 @@
 define(function() {
 	var keyNames = {
-		27: 'escape',
-		32: 'space',
-		38: 'up',
-		40: 'down',
-		39: 'right',
-		37: 'left',
-		13: 'enter'
+		'27': 'escape',
+		'32': 'space',
+		'38': 'up',
+		'40': 'down',
+		'39': 'right',
+		'37': 'left',
+		'13': 'enter'
 	};
 	var i;
 	// Alphabetic characters

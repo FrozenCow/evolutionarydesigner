@@ -1,4 +1,4 @@
-define(['cclass','vector','linesegment'],function(cclass,Vector,LineSegment) {
+define(['vector','linesegment'],function(Vector,LineSegment) {
 	function pointsToSegments(points) {
 		// Create segments from points.
 		var lineSegments = [];
@@ -19,26 +19,26 @@ define(['cclass','vector','linesegment'],function(cclass,Vector,LineSegment) {
 		return lineSegments;
 	}
 
-	return cclass({
-		constructor: function(points,inverted) {
-			this.inverted = inverted;
-			this.collisionlines = pointsToSegments(points);
-			function max(a,f) {
-				var r = null;
-				a.forEach(function(e) {
-					if (!r || f(e,a)) {
-						r= e;
-					}
-				});
-				return r;
-			}
-			this.bounds = {
-				left: max(this.collisionlines, function(a,b) { return a.x < b.x; }),
-				right: max(this.collisionlines, function(a,b) { return a.x > b.x; }),
-				top: max(this.collisionlines, function(a,b) { return a.y < b.y; }),
-				bottom: max(this.collisionlines, function(a,b) { return a.y > b.y; })
-			};
-			this.position = new Vector((this.bounds.left+this.bounds.right)/2,(this.bounds.top+this.bounds.bottom)/2);
+	function StaticCollidable(points,inverted) {
+		this.inverted = inverted;
+		this.collisionlines = pointsToSegments(points);
+		function max(a,f) {
+			var r = null;
+			a.forEach(function(e) {
+				if (!r || f(e,a)) {
+					r= e;
+				}
+			});
+			return r;
 		}
-	});
+		this.bounds = {
+			left: max(this.collisionlines, function(a,b) { return a.x < b.x; }),
+			right: max(this.collisionlines, function(a,b) { return a.x > b.x; }),
+			top: max(this.collisionlines, function(a,b) { return a.y < b.y; }),
+			bottom: max(this.collisionlines, function(a,b) { return a.y > b.y; })
+		};
+		this.position = new Vector((this.bounds.left+this.bounds.right)/2,(this.bounds.top+this.bounds.bottom)/2);
+	}
+	StaticCollidable.prototype['collidable'] = true;
+	return StaticCollidable;
 });

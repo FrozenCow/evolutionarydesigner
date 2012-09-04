@@ -87,11 +87,11 @@ define(['eventemitter'],function(eventemitter) {
 			if (!preloadResources[type]) { return; }
 			preloadResources[type].forEach(function(name) {
 				status.total++;
-				resources[loadfunction](name,onResourceLoaded);
+				loadfunction.call(resources, name,onResourceLoaded);
 			});
 		}
-		loadMultiple('images','loadImage');
-		loadMultiple('audio','loadAudio');
+		loadMultiple('images',resources.loadImage);
+		loadMultiple('audio',resources.loadAudio);
 
 		function onResourceLoaded(err) {
 			if (err) {
