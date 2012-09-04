@@ -945,9 +945,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 			currentlevel = g.level;
 			nextLevel = g.level.nextLevel();
 
-			if (g.kongregate) {
-				g.kongregate.stats.submit('finishtime_'+currentlevel.name,finishtime);
-			}
+			g.emit('finished',{level:currentlevel.name,time:finishtime});
 
 			g.ChangeLevel(null);
 			g.chains.update.push(update);
