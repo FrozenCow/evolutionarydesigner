@@ -46,7 +46,8 @@ function slide(a,b) {
 	return (b?1:0)-(a?1:0);
 }
 
-require(['domready!','game','cclass','vector','editor','mouse','collision','staticcollidable','keyboard','quake','resources','kongregate'],function(document,Game,cclass,Vector,editor,mouse,collision,StaticCollidable,keyboard,quake,resources,kongregate) {
+require(['domready!','game','cclass','vector','editor','required','mouse','collision','staticcollidable','keyboard','quake','resources','kongregate'],function(document,Game,cclass,Vector,editor,required,mouse,collision,StaticCollidable,keyboard,quake,resources,kongregate) {
+	if (!document) { return; }
 	var canvas = document.getElementById('main');
 	var t = new Vector(0,0);
 	var t2 = new Vector(0,0);
@@ -54,7 +55,7 @@ require(['domready!','game','cclass','vector','editor','mouse','collision','stat
 		images: ['ball1','ball2','spring','grass','ground','flag','arrow'],
 		audio: ['finish','start','stop','deny','add1','add2','add3','remove1','remove2','remove3']
 	};
-	var g = new Game(startGame, canvas, [mouse,keyboard,resources(rs),collision,quake,kongregate]);
+	var g = new Game(startGame, canvas, [required(['chrome']),mouse,keyboard,resources(rs),collision,quake,kongregate]);
 	var game = g;
 	g.resources.status.on('changed',function() {
 		g.graphics.context.clearRect(0,0,800,600);

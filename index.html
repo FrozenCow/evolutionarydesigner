@@ -1,11 +1,18 @@
+<html>
+<head>
 <link href='https://fonts.googleapis.com/css?family=Permanent+Marker' rel='stylesheet' type='text/css'>
 <title>Evolutionary Designer</title>
 <style>
-body { margin: 0px; overflow: hidden; }
+body {
+	margin: 0px;
+	overflow: hidden;
+	font-family:arial;
+	font-size:15px;
+}
 button:first-child {
 	margin-top: 0px;
 }
-button {
+button, .button {
 	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
 	-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
 	box-shadow:inset 0px 1px 0px 0px #ffffff;
@@ -28,13 +35,13 @@ button {
 
 	margin-top: 5px;
 }
-button:hover {
+button:hover, .button:hover {
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
 	background:-moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
 	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#dfdfdf', endColorstr='#ededed');
 	background-color:#dfdfdf;
 }
-button:active {
+button:active, .button:active {
 	position:relative;
 	top:1px;
 }
@@ -91,4 +98,8 @@ button:active {
 </style>
 <script src='http://www.kongregate.com/javascripts/kongregate_api.js'></script>
 <script data-main="main" src="require.js"></script>
+</head>
+<body>
 <canvas id="main" width="800" height="600"></canvas>
+</body>
+</html>
