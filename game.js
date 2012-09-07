@@ -49,7 +49,7 @@ define(['eventemitter','objectmanager','graphics'], function(eventemitter,Object
 		function componentLoaded() {
 			componentsLoaded++;
 			if (componentsLoaded === components.length) {
-				start();
+				setTimeout(start,0);
 			}
 		}
 		this.components = components;

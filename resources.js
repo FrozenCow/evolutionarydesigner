@@ -20,7 +20,12 @@ define(['eventemitter'],function(eventemitter) {
 
 		function loadImage(name,callback) {
 			var me = this;
-			var img = new Image();
+			var img = document.getElementById('image_'+name);
+			if (img) {
+				me.images[name] = img;
+				return callback(null,img);
+			}
+			img = new Image();
 			img.src = name+'.png';
 			img.onload = function() {
 				me.images[name] = img;
@@ -37,7 +42,12 @@ define(['eventemitter'],function(eventemitter) {
 			var isdone = false;
 			var checkinterval = 10;
 			var loadtime = 0;
-			var a = new Audio(name+'.wav');
+			var a = document.getElementById('audio_'+name);
+			if (a) {
+				me.audio[name] = a;
+				return callback(null,a);
+			}
+			a = new Audio(name+'.wav');
 			try {
 				a.addEventListener('canplaythrough', markdone, false);
 			} catch(e) { console.error(e); }
