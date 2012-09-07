@@ -6,6 +6,34 @@ var creatures = {
 	walker: {"particles":[{"id":0,"posx":51.896530634788846,"posy":411.6812268461298},{"id":1,"posx":101.8208103085872,"posy":498.3310829209092},{"id":2,"posx":151.89614960284615,"posy":411.78028285949597},{"id":3,"posx":101.80079193291014,"posy":498.3360243490881},{"id":4,"posx":101.9772804284342,"posy":325.1308195747719},{"id":5,"posx":201.8178218890848,"posy":498.42714526912914},{"id":6,"posx":201.79570741933048,"posy":498.44107090378867},{"id":7,"posx":1.8217109358508998,"posy":498.24669695233416},{"id":8,"posx":1.7957369855173382,"posy":498.2247651105463}],"springs":[{"aid":0,"bid":1,"keys":["1"]},{"aid":1,"bid":2,"keys":["2"]},{"aid":0,"bid":2,"keys":[]},{"aid":2,"bid":3,"keys":["1"]},{"aid":3,"bid":0,"keys":["2"]},{"aid":0,"bid":4,"keys":[]},{"aid":4,"bid":2,"keys":[]},{"aid":1,"bid":5,"keys":[]},{"aid":5,"bid":2,"keys":["2"]},{"aid":3,"bid":6,"keys":[]},{"aid":6,"bid":2,"keys":["1"]},{"aid":0,"bid":7,"keys":["2"]},{"aid":7,"bid":1,"keys":[]},{"aid":3,"bid":8,"keys":[]},{"aid":8,"bid":0,"keys":["1"]}]}
 };
 
+// Production steps of ECMA-262, Edition 5, 15.4.4.18
+// Reference: http://es5.github.com/#x15.4.4.18
+if (!Array.prototype.forEach) {
+  Array.prototype.forEach = function(callback, thisArg) {
+    var T, k;
+    if (this === null) {
+      throw new TypeError("this is null or not defined");
+    }
+    var O = Object(this);
+    var len = O.length >>> 0; // Hack to convert O.length to a UInt32
+    if ({}.toString.call(callback) != "[object Function]") {
+      throw new TypeError( callback + " is not a function");
+    }
+    if ( thisArg ) {
+      T = thisArg;
+    }
+    k = 0;
+    while( k < len ) {
+      var kValue;
+      if ( k in O ) {
+        kValue = O[ k ];
+        callback.call( T, kValue, k, O );
+      }
+      k++;
+    }
+  };
+}
+
 Array.prototype.remove = function(elem) {
 	var i = this.indexOf(elem);
 	if (i >= 0) {
